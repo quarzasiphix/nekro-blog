@@ -189,6 +189,16 @@ const fetchCategories = async () => {
 
   return (
     <div className="space-y-6">
+      <div className="space-y-2">
+        <Label htmlFor="title">Title *</Label>
+        <Input
+          id="title"
+          value={blog.title}
+          onChange={(e) => setBlog({ ...blog, title: e.target.value })}
+          placeholder="Enter blog title"
+          className="text-lg font-medium"
+        />
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="featured_image">Featured Image URL</Label>
