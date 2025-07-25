@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { Save } from 'lucide-react';
 
 interface BlogEditorProps {
@@ -34,6 +35,8 @@ interface Category {
 }
 
 export const BlogEditor: React.FC<BlogEditorProps> = ({ blogId, onSave }) => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [blog, setBlog] = useState<Partial<Blog>>({
     title: '',
     slug: '',
@@ -49,9 +52,25 @@ export const BlogEditor: React.FC<BlogEditorProps> = ({ blogId, onSave }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const { toast } = useToast();
+const [uploading, setUploading] = useState(false);
 
-  const fetchCategories = async () => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (!e.target.files?.length) return;
+  const file = e.target.files[0];
+  const path = `user_${user.id}/${file.name}`;
+  setUploading(true);
+  const { error: uploadError } = await supabase.storage.from('images').upload(path, file);
+  if (uploadError) {
+    toast({ title: 'Upload Error', description: uploadError.message, variant: 'destructive' });
+  } else {
+    const { data } = supabase.storage.from('images').getPublicUrl(path);
+    setBlog({ ...blog, featured_image_url: data.publicUrl });
+    toast({ title: 'Upload Success', description: 'Image uploaded' });
+  }
+  setUploading(false);
+};
+
+const fetchCategories = async () => {
     try {
       const { data, error } = await supabase
         .from('blog_categories')
@@ -172,13 +191,22 @@ export const BlogEditor: React.FC<BlogEditorProps> = ({ blogId, onSave }) => {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="title">Title</Label>
+          <Label htmlFor="featured_image">Featured Image URL</Label>
           <Input
-            id="title"
-            value={blog.title}
-            onChange={(e) => setBlog({ ...blog, title: e.target.value })}
-            placeholder="Enter blog title"
+            id="featured_image"
+            value={blog.featured_image_url}
+            onChange={(e) => setBlog({ ...blog, featured_image_url: e.target.value })}
+            placeholder="Enter image URL"
           />
+          <Label htmlFor="image_file">Or Upload Image</Label>
+          <Input
+            id="image_file"
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            disabled={uploading}
+          />
+          {uploading && <p className="text-sm">Uploading...</p>}
         </div>
         
         <div className="space-y-2">
@@ -224,27 +252,16 @@ export const BlogEditor: React.FC<BlogEditorProps> = ({ blogId, onSave }) => {
             </SelectContent>
           </Select>
         </div>
-
         <div className="space-y-2">
-          <Label htmlFor="featured_image">Featured Image URL</Label>
-          <Input
-            id="featured_image"
-            value={blog.featured_image_url}
-            onChange={(e) => setBlog({ ...blog, featured_image_url: e.target.value })}
-            placeholder="Enter image URL"
+          <Label htmlFor="excerpt">Excerpt</Label>
+          <Textarea
+            id="excerpt"
+            value={blog.excerpt}
+            onChange={(e) => setBlog({ ...blog, excerpt: e.target.value })}
+            placeholder="Enter a brief excerpt"
+            rows={3}
           />
         </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="excerpt">Excerpt</Label>
-        <Textarea
-          id="excerpt"
-          value={blog.excerpt}
-          onChange={(e) => setBlog({ ...blog, excerpt: e.target.value })}
-          placeholder="Enter a brief excerpt"
-          rows={3}
-        />
       </div>
 
       <div className="space-y-2">
