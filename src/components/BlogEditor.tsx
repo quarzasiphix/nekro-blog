@@ -208,14 +208,14 @@ export const BlogEditor: React.FC<BlogEditorProps> = ({ blogId, onSave }) => {
         <div className="space-y-2">
           <Label htmlFor="category">Category</Label>
           <Select
-            value={blog.category_id || ''}
-            onValueChange={(value) => setBlog({ ...blog, category_id: value || null })}
+            value={blog.category_id || 'none'}
+            onValueChange={(value) => setBlog({ ...blog, category_id: value === 'none' ? null : value })}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select a category" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">No category</SelectItem>
+              <SelectItem value="none">No category</SelectItem>
               {categories.map((category) => (
                 <SelectItem key={category.id} value={category.id}>
                   {category.name}
